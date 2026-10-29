@@ -1,0 +1,141 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # There is no dependency install step because there are no
+      # dependencies. The package is installed only so that the console
+      # script entry point is exercised the way a user would get it.
+      - name: Install
+        run: python -m pip install -e .
+
+      - name: Run the test suite
+        run: python -m unittest discover -s tests -t . -v
+
+      - name: Keccak vectors pass
+        run: |
+          selector-collide selftest
+          selector-collide selftest --json > selftest.json
+          python - <<'PY'
+          import json
+          report = json.load(open("selftest.json"))
+          assert report["failed"] == 0, report
+          assert report["checks"] >= 20, report
+          digests = {r["check"]: r for r in report["results"]}
+          empty = digests["keccak256 empty string"]
+          assert empty["actual"] == (
+              "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+          ), empty
+          print(f"{report['checks']} keccak vectors, {report['failed']} failed")
+          PY
+
+      - name: The example proxy pair reports the expected shadowing
+        run: |
+          set +e
+          selector-collide --proxy examples/proxy.json \
+            --implementation examples/implementation.json --json > shadow.json
+          code=$?
+          set -e
+          test "$code" -eq 1 || { echo "expected exit 1, got $code"; exit 1; }
+          python - <<'PY'
+          import json
+          report = json.load(open("shadow.json"))
+          rules = sorted({f["rule"] for f in report["findings"]})
+          assert rules == ["SC001", "SC002", "SC003"], rules
+          shadowed = sorted(
+              f["selector"] for f in report["findings"] if f["rule"] == "SC001"
+          )
+          assert shadowed == ["0x3659cfe6", "0x8da5cb5b", "0xe74b981b"], shadowed
+          assert report["counts"]["high"] == 4, report["counts"]
+          assert report["counts"]["medium"] == 2, report["counts"]
+          print("shadowing: 6 findings over 3 selectors, as documented")
+          PY
+
+      - name: A clean proxy pair reports nothing and exits 0
+        run: |
+          selector-collide --proxy examples/clean-proxy.json \
+            --implementation examples/clean-implementation.json | tee clean.txt
+          grep -q "no collisions found" clean.txt
+
+      - name: The three-facet diamond reports one clash
+        run: |
+          set +e
+          selector-collide --diamond \
+            examples/diamond-facet-ownership.json \
+            examples/diamond-facet-token.json \
+            examples/diamond-facet-legacy.json --json > diamond.json
+          code=$?
+          set -e
+          test "$code" -eq 1 || { echo "expected exit 1, got $code"; exit 1; }
+          python - <<'PY'
+          import json
+          report = json.load(open("diamond.json"))
+          clashes = [f for f in report["findings"] if f["rule"] == "SC004"]
+          assert len(clashes) == 1, clashes
+          assert clashes[0]["selector"] == "0x42966c68", clashes[0]
+          print("diamond: one clash on 0x42966c68, as documented")
+          PY
+
+      - name: Exit codes are as documented
+        run: |
+          check() {
+            desc="$1"; expected="$2"; shift 2
+            set +e
+            "$@" > /dev/null 2>&1
+            actual=$?
+            set -e
+            if [ "$actual" -ne "$expected" ]; then
+              echo "$desc: expected exit $expected, got $actual"; exit 1
+            fi
+            echo "ok (exit $expected) $desc"
+          }
+          check "clean pair exits 0" 0 \
+            selector-collide --proxy examples/clean-proxy.json \
+            --implementation examples/clean-implementation.json
+          check "findings exit 1" 1 \
+            selector-collide --proxy examples/proxy.json \
+            --implementation examples/implementation.json
+          check "--fail-on never exits 0 despite findings" 0 \
+            selector-collide --proxy examples/proxy.json \
+            --implementation examples/implementation.json --fail-on never
+          check "no mode exits 2" 2 selector-collide check
+          check "bad selector exits 2" 2 selector-collide find 0xnothex
+          check "missing file exits 3" 3 selector-collide --abi no-such-file.json
+          check "exhausted search exits 4" 4 \
+            selector-collide find 0xa9059cbb --max 200
+          check "selector listing exits 0" 0 \
+            selector-collide selectors examples/implementation.json
+          check "allowlist with published collisions exits 1" 1 \
+            selector-collide allowlist examples/allowlist.txt
+
+      - name: A birthday collision is found in a small budget
+        run: |
+          selector-collide collide --max 400000 --json > collide.json
+          python - <<'PY'
+          import json
+          from selector_collide.keccak import selector_hex
+          report = json.load(open("collide.json"))
+          assert report["found"], report
+          first, second = report["signatures"]
+          assert first != second, report
+          assert selector_hex(first) == report["selector"], report
+          assert selector_hex(second) == report["selector"], report
+          print(f"{first} and {second} both hash to {report['selector']} "
+                f"after {report['tried']} candidates")
+          PY
