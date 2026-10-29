@@ -1,0 +1,15 @@
+# A signature list: the third accepted input shape. This is the declared call
+# surface of a fallback-based router, which has no Solidity ABI of its own
+# because its functions are dispatched by hand inside the fallback.
+#
+# Modifiers are not part of a selector and solc never records them in an ABI,
+# but they are what access control actually is, so a signature list may state
+# them: any trailing identifier that is not a Solidity keyword is read as a
+# modifier and is used by rule SC002.
+
+function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) external returns (uint256[] memory)
+function addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired) external returns (uint256, uint256, uint256)
+function sweep(contract IERC20 token, address to) external onlyOperator
+function setPaused(bool paused) external onlyGuardian
+fallback()
+receive()

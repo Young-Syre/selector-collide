@@ -1,0 +1,28 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      { "name": "logic", "type": "address", "internalType": "address" },
+      { "name": "admin_", "type": "address", "internalType": "address" }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "proxyAdmin",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view",
+    "modifiers": ["onlyAdmin"]
+  },
+  {
+    "type": "function",
+    "name": "proxyUpgradeTo",
+    "inputs": [{ "name": "newImplementation", "type": "address", "internalType": "address" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "modifiers": ["onlyAdmin"]
+  },
+  { "type": "fallback", "stateMutability": "payable" },
+  { "type": "receive", "stateMutability": "payable" }
+]

@@ -1,0 +1,13 @@
+# Selectors a hypothetical Safe-style module is permitted to call on the
+# treasury. This is the pattern rule SC008 is about: the guard compares four
+# bytes of calldata, so it permits every signature that hashes to those four
+# bytes, not only the one whoever wrote the list had in mind.
+#
+# Lines may be a bare selector or a signature; a signature is canonicalised
+# and hashed before comparison. '#' starts a comment.
+
+transfer(address,uint256)
+approve(address,uint256)
+0x18160ddd                        # totalSupply()
+burn(uint256)
+setFeeRecipient(address)

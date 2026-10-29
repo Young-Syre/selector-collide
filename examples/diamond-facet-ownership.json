@@ -1,0 +1,24 @@
+[
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [{ "name": "newOwner", "type": "address", "internalType": "address" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "modifiers": ["onlyOwner"]
+  },
+  {
+    "type": "function",
+    "name": "facetAddresses",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address[]", "internalType": "address[]" }],
+    "stateMutability": "view"
+  }
+]
