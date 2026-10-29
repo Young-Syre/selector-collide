@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "selector-collide"
+version = "0.1.0"
+description = "EVM function-selector collision and proxy-shadowing analyser. Standard library only, no network access."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "David Nichols" }]
+keywords = [
+    "ethereum",
+    "evm",
+    "solidity",
+    "security",
+    "smart-contracts",
+    "function-selector",
+    "keccak",
+    "proxy",
+    "eip-1967",
+    "eip-2535",
+    "diamond",
+    "audit",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+# No runtime dependencies, by design. Keccak-256 does not exist in the
+# standard library (hashlib has SHA3-256, which is a different function), so
+# it is implemented in selector_collide/keccak.py and pinned to published
+# vectors by the test suite.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Young-Syre/selector-collide"
+Source = "https://github.com/Young-Syre/selector-collide"
+Issues = "https://github.com/Young-Syre/selector-collide/issues"
+
+[project.scripts]
+selector-collide = "selector_collide.cli:run"
+
+[tool.setuptools]
+packages = ["selector_collide"]
+
+[tool.setuptools.package-data]
+selector_collide = ["py.typed"]
